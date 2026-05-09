@@ -30,9 +30,15 @@ def get_video(video_id:str)->Video:
 
 @app.patch("/videos/{video_id}/status",response_model=Video)
 def update_video_status(video_id:str,request:VideoStatusUpdateRequst):
-    video = update_video_status_service(video_id,request.status)
-    if not video:
-        raise HTTPException(status_code=404,detail="Video Not Found")
+    try:
+        video = update_video_status_service(video_id,request.status)
+        if not video:
+            raise HTTPException(status_code=404,detail="Video Not Found")
+        
+        video.status = request.status
+        return video
     
-    video.status = request.status
-    return video
+    except ValueError as e:
+        raise HTTPException(status_code=400,detail=str(e))
+
+

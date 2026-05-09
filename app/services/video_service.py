@@ -1,5 +1,6 @@
-from app.models import Video, create_video, VideoStatus
+from app.models import Video, create_video, VideoStatus,UploadUrlResponse
 from app.db import videos_db
+from app.s3 import s3_client,BUCKET_NAME
 
 ALLOWED_TRANSITIONS = {
     VideoStatus.CREATED: [VideoStatus.UPLOADING],
@@ -31,5 +32,31 @@ def update_video_status_service(video_id : str, status: VideoStatus) -> Video | 
     video.status = status
 
     return video
+
+
+def generate_upload_url_service(video_id:str)->UploadUrlResponse | None:
+    video = videos_db.get(video_id)
+
+    if not video:
+        return None
+
+    if video.status != VideoStatus.CREATED:
+        raise ValueError(f"Upload URL can only be generated when status of video is CREATED")
+    
+    video.status = VideoStatus.UPLOADING
+
+    # fake preassigned URL 
+    # upload_url = f"https://aws.com.s3/uploads/{video.id}"
+
+    upload_url = s3_client.generate_presigned_url(
+        ClientMethod="put_object",
+        Params={
+            "Bucket":BUCKET_NAME,
+            "Key":f"raw-videos/{video.id}.mp4"
+        },
+        ExpiresIn=3600
+    )
+
+    return UploadUrlResponse(video_id=video_id,upload_url=upload_url)
 
 

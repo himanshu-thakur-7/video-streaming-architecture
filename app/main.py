@@ -1,9 +1,13 @@
 from fastapi import FastAPI,HTTPException
-from app.models import Video,VideoCreateRequest,VideoStatusUpdateRequst,create_video
+from app.models import Video,VideoCreateRequest,VideoStatusUpdateRequst,create_video,UploadUrlResponse
 from app.db import videos_db
-from app.services.video_service import create_video_service,update_video_status_service,get_video_service
-
+from app.services.video_service import create_video_service,update_video_status_service,get_video_service,generate_upload_url_service
+from app.s3 import create_bucket_if_not_exists
 app = FastAPI()
+
+@app.on_event("startup")
+def startup():
+    create_bucket_if_not_exists()
 
 @app.get("/health")
 def healthCheck():
@@ -42,3 +46,20 @@ def update_video_status(video_id:str,request:VideoStatusUpdateRequst):
         raise HTTPException(status_code=400,detail=str(e))
 
 
+@app.post(
+    "/videos/{video_id}/upload-url",
+    response_model=UploadUrlResponse
+)
+def generate_upload_url(video_id: str):
+    try:
+        response = generate_upload_url_service(video_id)
+        if not response:
+            raise HTTPException(status_code=404, detail="Video not found")
+        
+        return response
+    
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )

@@ -22,6 +22,9 @@ class VideoCreateRequest(BaseModel):
     title: str
     description : str | None = None
 
+class VideoStatusUpdateRequst(BaseModel):
+    status: VideoStatus
+
 def create_video(title: str, description: str | None = None) -> Video: 
     return Video(
         id=str(uuid4()),

@@ -1,5 +1,5 @@
 from fastapi import FastAPI,HTTPException
-from app.models import Video,VideoCreateRequest,create_video
+from app.models import Video,VideoCreateRequest,VideoStatusUpdateRequst,create_video
 from app.db import videos_db
 
 app = FastAPI()
@@ -33,4 +33,13 @@ def get_video(video_id:str)->Video:
     if not video:
         raise HTTPException(status_code=404,detail="Video Not Found")
 
+    return video
+
+@app.patch("/videos/{video_id}/status",response_model=Video)
+def update_video_status(video_id:str,request:VideoStatusUpdateRequst):
+    video = videos_db.get(video_id)
+    if not video:
+        raise HTTPException(status_code=404,detail="Video Not Found")
+    
+    video.status = request.status
     return video
